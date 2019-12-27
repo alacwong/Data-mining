@@ -16,6 +16,7 @@ public class BaseHandler {
   //TODO write a search function
 
   public TweetBase tweetbase;
+  private static final String tempDb = "temp.db";
 
   public BaseHandler(){
     tweetbase = new TweetBase();
@@ -35,18 +36,7 @@ public class BaseHandler {
       e.printStackTrace();
     }
   }
-  
-  public void insertWord(String text, int frequency, Connection con, 
-      HashMap<String, Integer> tableMap, ArrayList<String> orderedWords) {
-    try {
-      text = text.toLowerCase();
-      tweetbase.InsertWord(text, con, frequency, tableMap, orderedWords);
-    } catch (ClassNotFoundException e) {
-      e.printStackTrace();
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-  }
+
 
   public WordNode getWord(String text, Connection con) throws WordNotFoundException {
     text = text.toLowerCase();
@@ -96,11 +86,13 @@ public class BaseHandler {
    */
   private WordNode searchTree(WordNode word, String text, String textRecurse)
       throws WordNotFoundException {
+    
+    System.out.println(word);
 
     if ((text).equals(word.getText())) {
       return word;
     }
-    if (textRecurse.length() > 1) {
+    if (textRecurse.length() > 0) {
       if (word.get(textRecurse.charAt(0)) == null) {
         throw new WordNotFoundException();
       } else {
@@ -131,9 +123,7 @@ public class BaseHandler {
   }
 
   private void treeTraversal(WordNode node, ArrayList<WordNode> list) {
-
     list.add(node);
-
     for (Character c: node.getNeighbors().keySet()) {
       try {
         treeTraversal(node.get(c), list);
@@ -167,13 +157,13 @@ public class BaseHandler {
       for (String s: miniDb.keySet()) {
         insertWord(s, miniDb.get(s), con);
       }
-   
+
     } catch (FileNotFoundException e) {
       System.out.println("File not found");
     } 
     final long endTime = System.currentTimeMillis();
     System.out.println(fileName + ": " + miniDb.size()  + " entries");
-    System.out.println("Loaded " + fileName + " into twitter.db in " + getTime(endTime  - startTime));
+    System.out.println("Loaded " + fileName + " in " + getTime(endTime  - startTime));
   }
 
   public String getTime(long milliseconds)  {
@@ -188,9 +178,95 @@ public class BaseHandler {
     }
   }
 
-  public Connection start(Connection con) {
+  public Connection InitalizeTemp(String fileName) {
+    Connection temp;
+    temp = start(null, tempDb);
+    Initalize(temp);
+    mineBook(fileName, temp);
+    return temp;
+  }
+
+  public HashMap<String, Integer> getDistrbution(Connection con, ArrayList<String> words){
+    HashMap<String, Integer> dist = new HashMap<String, Integer>();
+    ArrayList<WordNode> wordNodes = new ArrayList<WordNode>();
+    for (String word: words) {
+      try {
+        wordNodes.add(getWord(word, con));
+      } catch (WordNotFoundException e) {
+        wordNodes.add(new WordNode(word, 0));
+      }
+    }
+
+    for (WordNode node: wordNodes) {
+      dist.put(node.getText(), node.getFrequnecy());
+    }
+    return dist;
+  }
+
+  public ArrayList<WordNode> mergeSort(WordNode word){
+    ArrayList<ArrayList<WordNode>> mergedChild = new ArrayList<ArrayList<WordNode>>();
+    ArrayList<WordNode> mergedList = new ArrayList<WordNode>();
+    for (WordNode child: word.getNeighborList()) {
+      mergedChild.add(mergeSort(child));
+    }
+    mergedList = merge(mergedChild);
+    int insertMe = 0;
+    for (WordNode wSorted: mergedList) {
+      if (word.getFrequnecy() > wSorted.getFrequnecy()) {
+        insertMe++;
+      } else {
+        break;
+      }
+    }
+    mergedList.add(insertMe, word);
+    return mergedList;
+  }
+  
+  public ArrayList<WordNode> getSearchQuery(MasterHead head, String term){
+//    WordNode query = getNode(head.get())
+    
+    
+    return null;
+  }
+  
+  private WordNode getNode(WordNode node, String s) throws WordNotFoundException {
+    if (s.equals("")) {
+      return node;
+    } else {
+      return getNode(node.get(s.charAt(0)), s.substring(1));
+    }
+  }
+  
+  private ArrayList<WordNode> merge(ArrayList<ArrayList<WordNode>> mergedChild){
+    ArrayList<WordNode> mergedList = new ArrayList<WordNode>();
+    int [] pointer = new int [mergedChild.size()];
+    boolean done = false;
+    int min;
+    int minIndex;
+    while (!done) {
+      done = true;
+      min = Integer.MAX_VALUE;
+      minIndex = 0;
+      for (int i = 0; i < pointer.length; i++ ) {
+        if (pointer[i] < mergedChild.get(i).size()) {
+           done = false;
+           if (mergedChild.get(i).get(pointer[i]).getFrequnecy() < min) {
+             minIndex = i;
+             min = mergedChild.get(i).get(pointer[i]).getFrequnecy();
+           }
+        }
+      }
+      if (!done) {
+        mergedList.add(mergedChild.get(minIndex).get(pointer[minIndex]));
+        pointer[minIndex]++;
+      }
+    }
+    return mergedList;
+  }
+
+  public Connection start(Connection con, String fileName) {
     try {
-      con = tweetbase.start(con);
+      con = tweetbase.start(con, fileName);
     } catch (ClassNotFoundException e) {
       e.printStackTrace();
     } catch (SQLException e) {
