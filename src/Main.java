@@ -47,14 +47,31 @@ public class Main {
 //    System.out.println(TweetBase.extractTweet(Arrays.toString(TweetBase.extractTweet(text))));
     Connection con = null;
     BaseHandler b = new BaseHandler();
-    con = b.start(con);
-    b.Initalize(con);
-    b.mineBook("AliceInWonderLand", con);
-    b.mineBook("PrideandPrejudice", con);
-      //TODO
-      //fix insertion, not inserting in new tables
-    b.mineBook("CharlesDicken.txt", con);
+    con = b.start(con, TweetBase.dbname);
+//    b.Initalize(con);
+//    b.mineBook("AliceInWonderLand", con);
+//    b.mineBook("CharlesDicken.txt", con);
+//    b.mineBook("PrideandPrejudice", con);
+//    Connection temp = b.InitalizeTemp( "Test");
+//    ArrayList<String> test = new ArrayList<String>();
+//    test.add("just");
+//    test.add("some");
+//    test.add("common");
+//    test.add("words");
+//    
+//    System.out.println(b.getDistrbution(con, test));
 
+    MasterHead head = b.getTree(con);
+    ArrayList<WordNode> list = b.treeTraversal(head);
+    System.out.println(list.size());
+    try {
+      WordNode x = b.searchTree(head, "");
+      System.out.println(x);
+      System.out.println(b.mergeSort(x));
+    } catch (WordNotFoundException e) {
+      e.printStackTrace();
+    }
+  
   }
 
   /**
@@ -75,6 +92,8 @@ public class Main {
       message = input.nextLine();
     }
   }
+  
+  
 
   /**
    * Handles tweet deleting

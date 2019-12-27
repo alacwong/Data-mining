@@ -1,4 +1,5 @@
 package Tree;
+import java.util.ArrayList;
 import java.util.HashMap;
 import Exceptions.WordNotFoundException;
 
@@ -40,6 +41,13 @@ public class WordNode {
     }
   }
   
+  public ArrayList<WordNode> getNeighborList(){
+    ArrayList<WordNode> list = new ArrayList<WordNode>();
+    for (Character c: neighbors.keySet()) {
+      list.add(neighbors.get(c));
+    }
+    return list;
+  }
   
   public void setProbabilityMap(HashMap<Character, Double> probabilityMap) {
     this.probabilityMap = probabilityMap;
